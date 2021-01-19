@@ -44,13 +44,13 @@ func main() {
 
 func connectTwitterApi() (*anaconda.TwitterApi, error) {
 	// ToDo: ファイルを読み込む形で仮実装
-	raw, error := ioutil.ReadFile("./twitterAccount.json")
-	if error != nil {
-		return nil, error
+	ac, err := ioutil.ReadFile("./twitterAccount.json")
+	if err != nil {
+		return nil, err
 	}
 
 	var t TwitterAccount
-	json.Unmarshal(raw, &t)
+	json.Unmarshal(ac, &t)
 	api := anaconda.NewTwitterApiWithCredentials(t.AccessToken, t.AccessTokenSecret, t.ConsumerKey, t.ConsumerSecret)
 
 	return api, nil
