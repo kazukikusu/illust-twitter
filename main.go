@@ -50,8 +50,9 @@ func connectTwitterApi() (*anaconda.TwitterApi, error) {
 	}
 
 	var t TwitterAccount
-	json.Unmarshal(ac, &t)
-	api := anaconda.NewTwitterApiWithCredentials(t.AccessToken, t.AccessTokenSecret, t.ConsumerKey, t.ConsumerSecret)
+	if err := json.Unmarshal(ac, &t); err != nil {
+		return nil, err
+	}
 
 	return api, nil
 }
