@@ -5,23 +5,31 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/ChimeraCoder/anaconda"
 	"github.com/days365/illust-twitter/logger"
+	"github.com/dghubble/go-twitter/twitter"
+	"github.com/dghubble/oauth1"
 )
 
 func main() {
-	api, err := connectTwitterApi()
+	clinet, err := connectTwitterClient()
 	if err != nil {
 		logger.Error(err.Error())
 		return
 	}
 
 	// ToDo: 一旦仮置き
-	searchResult, _ := api.GetSearch("#test", nil)
+	search, _, err := clinet.Search.Tweets(&twitter.SearchTweetParams{
+		Query: "#test",
+	})
 
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
 
 	tweets := make([]Tweet, 0)
 
+	for _, data := range search.Statuses {
 		var mediaUrl string
 		if len(data.Entities.Media) != 0 {
 			medeaList := data.Entities.Media[0]
@@ -44,7 +52,7 @@ func main() {
 	}
 }
 
-func connectTwitterApi() (*anaconda.TwitterApi, error) {
+func connectTwitterClient() (*twitter.Client, error) {
 	// ToDo: ファイルを読み込む形で仮実装
 	ac, err := ioutil.ReadFile("./twitterAccount.json")
 	if err != nil {
@@ -56,7 +64,13 @@ func connectTwitterApi() (*anaconda.TwitterApi, error) {
 		return nil, err
 	}
 
-	return api, nil
+	config := oauth1.NewConfig(t.ConsumerKey, t.ConsumerSecret)
+	token := oauth1.NewToken(t.AccessToken, t.AccessTokenSecret)
+	httpClient := config.Client(oauth1.NoContext, token)
+
+	client := twitter.NewClient(httpClient)
+
+	return client, nil
 }
 
 type TwitterAccount struct {
