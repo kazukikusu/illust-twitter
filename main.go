@@ -19,18 +19,20 @@ func main() {
 	// ToDo: 一旦仮置き
 	searchResult, _ := api.GetSearch("#test", nil)
 
-	tweets := make([]*Tweet, 0)
 
-	// 取得対象：tweetのurlとなるもの。画像URL or データ
-	for _, data := range searchResult.Statuses {
-		tweet := new(Tweet)
-		tweet.ID = data.Id
-		tweet.Text = data.Text
-		tweet.UserID = data.User.Id
+	tweets := make([]Tweet, 0)
 
+		var mediaUrl string
 		if len(data.Entities.Media) != 0 {
 			medeaList := data.Entities.Media[0]
-			tweet.MediaUrl = medeaList.Media_url_https
+			mediaUrl = medeaList.MediaURLHttps
+		}
+
+		tweet := Tweet{
+			ID:       data.ID,
+			UserID:   data.User.ID,
+			Text:     data.Text,
+			MediaUrl: mediaUrl,
 		}
 
 		tweets = append(tweets, tweet)
@@ -71,4 +73,4 @@ type Tweet struct {
 	MediaUrl string `json:"media_url"`
 }
 
-type Tweets *[]Tweet
+type Tweets []Tweet
