@@ -6,11 +6,13 @@ import (
 	"io/ioutil"
 
 	"github.com/ChimeraCoder/anaconda"
+	"github.com/days365/illust-twitter/logger"
 )
 
 func main() {
 	api, err := connectTwitterApi()
 	if err != nil {
+		logger.Error(err.Error())
 		return
 	}
 
