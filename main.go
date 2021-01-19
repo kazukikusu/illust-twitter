@@ -2,12 +2,42 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 
 	"github.com/ChimeraCoder/anaconda"
 )
 
 func main() {
+	api, err := connectTwitterApi()
+	if err != nil {
+		return
+	}
+
+	// ToDo: 一旦仮置き
+	searchResult, _ := api.GetSearch("#test", nil)
+
+	tweets := make([]*Tweet, 0)
+
+	// 取得対象：tweetのurlとなるもの。画像URL or データ
+	for _, data := range searchResult.Statuses {
+		tweet := new(Tweet)
+		tweet.ID = data.Id
+		tweet.Text = data.Text
+		tweet.UserID = data.User.Id
+
+		if len(data.Entities.Media) != 0 {
+			medeaList := data.Entities.Media[0]
+			tweet.MediaUrl = medeaList.Media_url_https
+		}
+
+		tweets = append(tweets, tweet)
+	}
+
+	// ToDo: 一旦デバッグ用に置いておく
+	for _, v := range tweets {
+		fmt.Printf("%#v\n", v)
+	}
 }
 
 func connectTwitterApi() (*anaconda.TwitterApi, error) {
@@ -37,3 +67,5 @@ type Tweet struct {
 	Text     string `json:"text"`
 	MediaUrl string `json:"media_url"`
 }
+
+type Tweets *[]Tweet
