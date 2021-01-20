@@ -11,14 +11,14 @@ import (
 )
 
 func main() {
-	clinet, err := connectTwitterClient()
+	c, err := connectTwitterClient()
 	if err != nil {
 		logger.Error(err.Error())
 		return
 	}
 
 	// ToDo: 一旦仮置き
-	search, _, err := clinet.Search.Tweets(&twitter.SearchTweetParams{
+	search, _, err := c.Search.Tweets(&twitter.SearchTweetParams{
 		Query: "#test",
 	})
 
