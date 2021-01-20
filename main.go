@@ -37,10 +37,12 @@ func main() {
 		}
 
 		tweet := Tweet{
-			ID:       data.ID,
-			UserID:   data.User.ID,
-			Text:     data.Text,
-			MediaUrl: mediaUrl,
+			ID:         data.ID,
+			UserID:     data.User.ID,
+			Text:       data.Text,
+			MediaUrl:   mediaUrl,
+			CreatedAt:  data.CreatedAt,
+			InsertedAt: time.Now(),
 		}
 
 		tweets = append(tweets, tweet)
@@ -81,10 +83,12 @@ type TwitterAccount struct {
 }
 
 type Tweet struct {
-	ID       int64  `json:"id"`
-	UserID   int64  `json:"user_id"`
-	Text     string `json:"text"`
-	MediaUrl string `json:"media_url"`
+	ID         int64     `json:"id"`
+	UserID     int64     `json:"user_id"`
+	Text       string    `json:"text"`
+	MediaUrl   string    `json:"media_url"`
+	CreatedAt  string    `json:"created_at"`
+	InsertedAt time.Time `json:"inserted_at"`
 }
 
 type Tweets []Tweet
