@@ -44,6 +44,7 @@ func main() {
 		tweet := Tweet{
 			ID:         data.ID,
 			UserID:     data.User.ID,
+			ScreenName: data.User.ScreenName,
 			Text:       data.Text,
 			MediaUrl:   mediaUrl,
 			CreatedAt:  data.CreatedAt,
@@ -112,6 +113,7 @@ type TwitterAccount struct {
 type Tweet struct {
 	ID         int64     `json:"id"`
 	UserID     int64     `json:"user_id"`
+	ScreenName string    `json:"screen_name"`
 	Text       string    `json:"text"`
 	MediaUrl   string    `json:"media_url"`
 	CreatedAt  string    `json:"created_at"`
