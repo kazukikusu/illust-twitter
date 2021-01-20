@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
+	"os"
+	"time"
 
+	"cloud.google.com/go/datastore"
 	"github.com/days365/illust-twitter/logger"
 	"github.com/dghubble/go-twitter/twitter"
 	"github.com/dghubble/oauth1"
@@ -27,7 +30,9 @@ func main() {
 		return
 	}
 
-	tweets := make([]Tweet, 0)
+	ctx := context.Background()
+	projectID := getProject()
+	kind := getKind()
 
 	for _, data := range search.Statuses {
 		var mediaUrl string
@@ -45,12 +50,10 @@ func main() {
 			InsertedAt: time.Now(),
 		}
 
-		tweets = append(tweets, tweet)
-	}
-
-	// ToDo: 一旦デバッグ用に置いておく
-	for _, v := range tweets {
-		fmt.Printf("%#v\n", v)
+		err := putDataStore(ctx, projectID, kind, tweet)
+		if err != nil {
+			logger.Error(err.Error())
+		}
 	}
 }
 
@@ -73,6 +76,30 @@ func connectTwitterClient() (*twitter.Client, error) {
 	client := twitter.NewClient(httpClient)
 
 	return client, nil
+}
+
+func putDataStore(ctx context.Context, projectID string, kind string, tweet Tweet) error {
+
+	c, err := datastore.NewClient(ctx, projectID)
+	if err != nil {
+		return err
+	}
+	defer c.Close()
+
+	k := datastore.IncompleteKey(kind, nil)
+	if _, err := c.Put(ctx, k, &tweet); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func getProject() string {
+	return os.Getenv("DATASTORE_PROJECT_ID")
+}
+
+func getKind() string {
+	return os.Getenv("DATASTORE_KIND")
 }
 
 type TwitterAccount struct {
