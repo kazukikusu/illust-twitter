@@ -87,7 +87,7 @@ func putDataStore(ctx context.Context, projectID string, kind string, tweet Twee
 	}
 	defer c.Close()
 
-	k := datastore.IncompleteKey(kind, nil)
+	k := datastore.IDKey(kind, tweet.ID, nil)
 	if _, err := c.Put(ctx, k, &tweet); err != nil {
 		return err
 	}
