@@ -14,14 +14,14 @@ import (
 )
 
 func main() {
-	c, err := connectTwitterClient()
+	tc, err := connectTwitterClient()
 	if err != nil {
 		logger.Error(err.Error())
 		return
 	}
 
 	// ToDo: 一旦仮置き
-	search, _, err := c.Search.Tweets(&twitter.SearchTweetParams{
+	search, _, err := tc.Search.Tweets(&twitter.SearchTweetParams{
 		Query: "#test",
 	})
 
@@ -31,8 +31,22 @@ func main() {
 	}
 
 	ctx := context.Background()
-	projectID := getProject()
-	kind := getKind()
+	dc, err := connectDatastoreClient(ctx)
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
+
+	tweets, keys := setTweets(search, make([]Tweet, 0))
+
+	if _, err := dc.PutMulti(ctx, keys, tweets); err != nil {
+		logger.Error(err.Error())
+		return
+	}
+}
+
+func setTweets(search *twitter.Search, tweets []Tweet) ([]Tweet, []*datastore.Key) {
+	keys := make([]*datastore.Key, 0)
 
 	for _, data := range search.Statuses {
 		var mediaUrl string
@@ -51,11 +65,13 @@ func main() {
 			InsertedAt: time.Now(),
 		}
 
-		err := putDataStore(ctx, projectID, kind, tweet)
-		if err != nil {
-			logger.Error(err.Error())
-		}
+		tweets = append(tweets, tweet)
+
+		key := datastore.IDKey(getKind(), tweet.ID, nil)
+		keys = append(keys, key)
 	}
+
+	return tweets, keys
 }
 
 func connectTwitterClient() (*twitter.Client, error) {
@@ -79,20 +95,13 @@ func connectTwitterClient() (*twitter.Client, error) {
 	return client, nil
 }
 
-func putDataStore(ctx context.Context, projectID string, kind string, tweet Tweet) error {
-
-	c, err := datastore.NewClient(ctx, projectID)
+func connectDatastoreClient(ctx context.Context) (*datastore.Client, error) {
+	dc, err := datastore.NewClient(ctx, getProject())
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer c.Close()
-
-	k := datastore.IDKey(kind, tweet.ID, nil)
-	if _, err := c.Put(ctx, k, &tweet); err != nil {
-		return err
-	}
-
-	return nil
+	defer dc.Close()
+	return dc, nil
 }
 
 func getProject() string {
