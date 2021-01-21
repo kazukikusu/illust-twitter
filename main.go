@@ -1,24 +1,27 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
+	"os"
+	"time"
 
+	"cloud.google.com/go/datastore"
 	"github.com/days365/illust-twitter/logger"
 	"github.com/dghubble/go-twitter/twitter"
 	"github.com/dghubble/oauth1"
 )
 
 func main() {
-	clinet, err := connectTwitterClient()
+	tc, err := connectTwitterClient()
 	if err != nil {
 		logger.Error(err.Error())
 		return
 	}
 
 	// ToDo: 一旦仮置き
-	search, _, err := clinet.Search.Tweets(&twitter.SearchTweetParams{
+	search, _, err := tc.Search.Tweets(&twitter.SearchTweetParams{
 		Query: "#test",
 	})
 
@@ -27,7 +30,24 @@ func main() {
 		return
 	}
 
-	tweets := make([]Tweet, 0)
+	ctx := context.Background()
+	dc, err := connectDatastoreClient(ctx)
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
+	defer dc.Close()
+
+	tweets, keys := setTweets(search, make([]Tweet, 0))
+
+	if _, err := dc.PutMulti(ctx, keys, tweets); err != nil {
+		logger.Error(err.Error())
+		return
+	}
+}
+
+func setTweets(search *twitter.Search, tweets []Tweet) ([]Tweet, []*datastore.Key) {
+	keys := make([]*datastore.Key, 0)
 
 	for _, data := range search.Statuses {
 		var mediaUrl string
@@ -37,19 +57,22 @@ func main() {
 		}
 
 		tweet := Tweet{
-			ID:       data.ID,
-			UserID:   data.User.ID,
-			Text:     data.Text,
-			MediaUrl: mediaUrl,
+			ID:         data.ID,
+			UserID:     data.User.ID,
+			ScreenName: data.User.ScreenName,
+			Text:       data.Text,
+			MediaUrl:   mediaUrl,
+			CreatedAt:  data.CreatedAt,
+			InsertedAt: time.Now(),
 		}
 
 		tweets = append(tweets, tweet)
+
+		key := datastore.IDKey(getKind(), tweet.ID, nil)
+		keys = append(keys, key)
 	}
 
-	// ToDo: 一旦デバッグ用に置いておく
-	for _, v := range tweets {
-		fmt.Printf("%#v\n", v)
-	}
+	return tweets, keys
 }
 
 func connectTwitterClient() (*twitter.Client, error) {
@@ -73,6 +96,22 @@ func connectTwitterClient() (*twitter.Client, error) {
 	return client, nil
 }
 
+func connectDatastoreClient(ctx context.Context) (*datastore.Client, error) {
+	dc, err := datastore.NewClient(ctx, getProject())
+	if err != nil {
+		return nil, err
+	}
+	return dc, nil
+}
+
+func getProject() string {
+	return os.Getenv("DATASTORE_PROJECT_ID")
+}
+
+func getKind() string {
+	return os.Getenv("DATASTORE_KIND")
+}
+
 type TwitterAccount struct {
 	AccessToken       string `json:"accessToken"`
 	AccessTokenSecret string `json:"accessTokenSecret"`
@@ -81,10 +120,13 @@ type TwitterAccount struct {
 }
 
 type Tweet struct {
-	ID       int64  `json:"id"`
-	UserID   int64  `json:"user_id"`
-	Text     string `json:"text"`
-	MediaUrl string `json:"media_url"`
+	ID         int64     `json:"id"`
+	UserID     int64     `json:"user_id"`
+	ScreenName string    `json:"screen_name"`
+	Text       string    `json:"text"`
+	MediaUrl   string    `json:"media_url"`
+	CreatedAt  string    `json:"created_at"`
+	InsertedAt time.Time `json:"inserted_at"`
 }
 
 type Tweets []Tweet
