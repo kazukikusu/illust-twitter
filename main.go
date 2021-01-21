@@ -36,6 +36,7 @@ func main() {
 		logger.Error(err.Error())
 		return
 	}
+	defer dc.Close()
 
 	tweets, keys := setTweets(search, make([]Tweet, 0))
 
@@ -100,7 +101,6 @@ func connectDatastoreClient(ctx context.Context) (*datastore.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer dc.Close()
 	return dc, nil
 }
 
